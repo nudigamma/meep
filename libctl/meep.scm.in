@@ -573,6 +573,10 @@
   (if (null? fields) (init-fields))
   (meep-dft-flux-save-hdf5 flux fields fname "" (get-filename-prefix)))
 
+(define (save-dft fname flux)
+  (if (null? fields) (init-fields))
+  (meep-dft-flux-save-dft flux fname (get-filename-prefix)))
+
 (define (load-minus-flux fname flux)
   (load-flux fname flux)
   (meep-dft-flux-scale-dfts flux -1.0))

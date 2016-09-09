@@ -337,6 +337,60 @@ void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
   load_dft_hdf5(dft_chunks, component_name(c), file, dprefix);
 }
 
+void dft_chunk::save_dft(h5file *file) {
+  for (const dft_chunk *cur = this; cur; cur = cur->next_in_dft) {
+    /* compute output grid size etc. */
+    int dims[4] = {1,1,1,1};
+    int rank = 0, N = 1, Nfreq = cur->Nomega;
+    LOOP_OVER_DIRECTIONS(cur->is.dim, d) {
+      dims[rank] = (cur->ie.in_direction(d) - cur->is.in_direction(d)) / 2 + 1;
+      if (dims[rank] <= 1)
+	dims[rank] = 1;
+      N *= dims[rank++];
+    }
+
+    if (N * Nfreq < 1) return; /* nothing to output */
+
+    /* 2 x N x Nfreq array of fields in row-major order */
+    realnum *dft = new realnum[2*N*Nfreq];
+    realnum *dft_ = new realnum[2*N*Nfreq]; // temp array for sum_to_master
+
+    for (int i0 = 0; i0 < dims[0]; ++i0)
+      for (int i1 = 0; i1 < dims[1]; ++i1)
+	for (int i2 = 0; i2 < dims[2]; ++i2) {
+	  int idx = (i0 * dims[1] + i1) * dims[2] + i2;
+	  for (int i = 0; i < Nfreq; ++i) {
+	    dft_[(0 * N + idx) * Nfreq + i] =
+	      real(cur->dft[i * N + idx]);
+	    dft_[(1 * N + idx) * Nfreq + i] =
+	      imag(cur->dft[i * N + idx]);
+	  }
+	}
+
+    sum_to_master(dft_, dft, 2*N*Nfreq);
+    delete[] dft_;
+
+    /* collapse trailing singleton dimensions */
+    while (rank > 0 && dims[rank-1] == 1)
+      --rank;
+    /* frequencies are the last dimension */
+    if (Nfreq > 1)
+      dims[rank++] = Nfreq;
+
+    /* output to a file with one dataset per component & real/imag part */
+    if (am_master()) {
+      char dataname[128];
+      for (int reim = 0; reim < 2; ++reim) {
+	snprintf(dataname, 128, "%s.%c",
+		 component_name(cur->c), "ri"[reim]);
+	file->write(dataname, rank, dims, dft + reim*N*Nfreq);
+      }
+    }
+
+    delete[] dft;
+  }
+}
+
 dft_flux::dft_flux(const component cE_, const component cH_,
 		   dft_chunk *E_, dft_chunk *H_, 
 		   double fmin, double fmax, int Nf)
@@ -374,6 +428,17 @@ void dft_flux::save_hdf5(h5file *file, const char *dprefix) {
   save_dft_hdf5(E, cE, file, dprefix);
   file->prevent_deadlock(); // hackery
   save_dft_hdf5(H, cH, file, dprefix);
+}
+
+void dft_flux::save_dft(const char *fname, const char *prefix) {
+  const int buflen = 1024;
+  static char filename[buflen];
+  snprintf(filename, buflen, "%s%s%s.h5",
+	   prefix ? prefix : "", prefix && prefix[0] ? "-" : "",
+	   fname);
+  h5file ff(filename, h5file::WRITE, false);
+  E->save_dft(&ff);
+  H->save_dft(&ff);
 }
 
 void dft_flux::load_hdf5(h5file *file, const char *dprefix) {

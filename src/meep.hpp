@@ -830,6 +830,8 @@ public:
             ivec shift_, const symmetry &S_, int sn_, int vc,
 	    const void *data_);
   ~dft_chunk();
+
+  void save_dft(h5file *file);
   
   void update_dft(double time);
 
@@ -897,6 +899,7 @@ public:
 
   void save_hdf5(h5file *file, const char *dprefix = 0);
   void load_hdf5(h5file *file, const char *dprefix = 0);
+  void save_dft(const char *fname, const char *prefix = 0);
 
   void operator-=(const dft_flux &fl) { if (E && fl.E) *E -= *fl.E; if (H && fl.H) *H -= *fl.H; }
 
