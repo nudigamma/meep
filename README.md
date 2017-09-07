@@ -1,21 +1,14 @@
+[![Latest Docs](https://readthedocs.org/projects/pip/badge/?version=latest)](http://meep.readthedocs.io/en/latest/)
 [![Build Status](https://travis-ci.org/stevengj/meep.svg?branch=master)](https://travis-ci.org/stevengj/meep)
 
 Meep (or MEEP) is a free finite-difference time-domain (FDTD)
-simulation software package developed at MIT to model electromagnetic
-systems.  You can download Meep and learn more about it at the Meep
-home page:
+simulation software package to model electromagnetic systems.
 
-* http://ab-initio.mit.edu/meep/
+The latest documentation is available on [readthedocs](http://meep.readthedocs.io/en/latest).
 
-The Meep home page also links to a meep-discuss mailing list for
-discussions about Meep and FDTD simulations, and a meep-announce
-mailing list for announcements of Meep releases.
-
-"MEEP" stands for: MIT Electromagnetic Equation Propagation
-
-or (add your own below):
-
-* Maxwell's Equations for Every Person
-* MEEP Excites Engineers and Physicists
-* Maybe Electromagnetism Eventually Pays?
-* Many Eggheads Earn Prestige	
+To compile directly from the git repository, you need to run
+```
+sh autogen.sh
+make
+```
+in the cloned directory in order to generate the necessary files. You will need GNU autotools and SWIG installed, among other packages.
